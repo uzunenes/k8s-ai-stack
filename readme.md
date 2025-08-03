@@ -271,11 +271,11 @@ go run load-test.go
 ## Acknowledgements
 I would like to thank my teammates for their valuable support during this work.
 
-- Zekeriye Altunkaynak
 - Alper Aldemir
 - Ceyhun Erdil
 - Güneş Balçık
 - Mehmet Ali Erol
+- Zekeriye Altunkaynak
   
 ## References
 - [NVIDIA L40S Data Center GPU](https://www.nvidia.com/en-us/data-center/l40s/)
