@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openwebui
+  namespace: ipms
+  labels:
+    app: openwebui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openwebui
+  template:
+    metadata:
+      labels:
+        app: openwebui
+    spec:
+      containers:
+        - name: openwebui
+          image: ghcr.io/open-webui/open-webui:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: OAUTH2_PROVIDER
+              value: microsoft
+            - name: OAUTH2_CLIENT_ID
+              value: "<MICROSOFT_CLIENT_ID>"
+            - name: OAUTH2_CLIENT_SECRET
+              value: "<MICROSOFT_CLIENT_SECRET>"
+            - name: OAUTH2_REDIRECT_URI
+              value: "https://ai.com.tr/oauth2/callback"
+            - name: API_BASE_URL
+              value: "http://vllm-sv2.ipms.svc.cluster.local:8000"
+            - name: OLLAMA_BASE_URL
+              value: "http://llama-service2.ipms.svc.cluster.local:11434"
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - mountPath: /data
+              name: openwebui-data
+      volumes:
+        - name: openwebui-data
+          persistentVolumeClaim:
+            claimName: openwebui-pvc

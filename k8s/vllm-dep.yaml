@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm
+  namespace: ipms
+  labels:
+    app: vllm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vllm
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+  template:
+    metadata:
+      labels:
+        app: vllm
+    spec:
+      containers:
+        - name: container-0
+          image: vllm/vllm-openai:latest
+          imagePullPolicy: IfNotPresent
+          command: ["vllm"]
+          args:
+            - serve
+            - qwen/qwen3-32B
+            - "--tensor-parallel-size"
+            - "2"
+            - "--dtype"
+            - bfloat16
+            - "--kv-cache-dtype"
+            - auto
+            - "--enforce-eager"
+            - "--download-dir"
+            - /home/vllm
+            - "--max-model-len"
+            - "16384"
+            - "--max-num-seqs"
+            - "8"
+          env:
+            - name: VLLM_LOGGING_LEVEL
+              value: DEBUG
+            - name: HUGGING_FACE_HUB_TOKEN
+              value: hf_TOKEN
+            - name: TRANSFORMERS_CACHE
+              value: /home/vllm
+            - name: HF_HOME
+              value: /home/vllm/cache
+            - name: HF_HUB_DISABLE_SSL_VERIFICATION
+              value: "1"
+            - name: TRANSFORMERS_VERBOSITY
+              value: debug
+            - name: NCCL_DEBUG
+              value: INFO
+            - name: NCCL_SOCKET_IFNAME
+              value: eth0
+            - name: CUDA_VISIBLE_DEVICES
+              value: 1,2
+            - name: NCCL_P2P_DISABLE
+              value: "0"
+            - name: PYTORCH_CUDA_ALLOC_CONF
+              value: expandable_segments:True
+          resources:
+            limits:
+              nvidia.com/gpu: "2"
+            requests:
+              nvidia.com/gpu: "2"
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: false
+            runAsNonRoot: false
+          volumeMounts:
+            - mountPath: /home/vllm
+              name: llm-storage
+            - mountPath: /dev/shm
+              name: dshm
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      runtimeClassName: nvidia
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 8Gi
+        - name: llm-storage
+          persistentVolumeClaim:
+            claimName: llm-pvc
