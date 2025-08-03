@@ -275,7 +275,8 @@ I would like to thank my teammates for their valuable support during this work.
 - Alper Aldemir
 - Ceyhun Erdil
 - Güneş Balçık
-
+- Mehmet Ali Erol
+  
 ## References
 - [NVIDIA L40S Data Center GPU](https://www.nvidia.com/en-us/data-center/l40s/)
 - [vLLM Documentation](https://docs.vllm.ai/en/stable/)
