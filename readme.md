@@ -1,11 +1,11 @@
-# Kubernetes AI Stack –  Flexible and High-Performance LLM Inference
+# Kubernetes AI Stack – Flexible and High-Performance LLM Inference
 
 This repository presents a production-ready AI inference stack for Kubernetes, designed to run advanced large language models (LLMs) of your choice—including but not limited to Qwen3-32B—on NVIDIA L40S GPUs using vLLM. The stack integrates Ollama for embeddings and image analysis, and provides a unified interface through OpenWebUI with secure Microsoft OAuth2 authentication. All services are orchestrated within Kubernetes and securely exposed via Ingress under an internal DNS hostname (e.g., https://ai.com.tr), enabling scalable, high-performance AI capabilities on your own infrastructure.
 
 ![](docs/k8s-ai-stack.drawio.png?raw=true)
 
 ## Table of Contents
-- [Kubernetes AI Stack –  Flexible and High-Performance LLM Inference](#kubernetes-ai-stack---flexible-and-high-performance-llm-inference)
+- [Kubernetes AI Stack – Flexible and High-Performance LLM Inference](#kubernetes-ai-stack--flexible-and-high-performance-llm-inference)
   - [Table of Contents](#table-of-contents)
   - [1. Installation](#1-installation)
     - [1.1 Prerequisites](#11-prerequisites)
@@ -24,7 +24,6 @@ This repository presents a production-ready AI inference stack for Kubernetes, d
       - [1.4.3 OpenWebUI Microsoft OAuth2](#143-openwebui-microsoft-oauth2)
   - [2. Model Performance Test](#2-model-performance-test)
     - [2.1 vLLM Local Load Test \& Tokens Per Second Benchmark](#21-vllm-local-load-test--tokens-per-second-benchmark)
-  - [vLLM Load Test Results](#vllm-load-test-results)
   - [Acknowledgements](#acknowledgements)
   - [References](#references)
 
@@ -81,7 +80,7 @@ Then, run the following command (replace <NODE_IP> with your node's IP):
 
 
 ```bash
-curl http://<NODE_IP>:30081/generate \
+curl http://<NODE_IP>:<PORT>/generate \
      -H "Content-Type: application/json" \
      -d @prompt.json
 ```
@@ -104,7 +103,7 @@ You should receive a JSON response with the model’s completion, similar to:
 }
 ```
 
->Note: The actual response format may vary depending on the deployed model and API configuration. 
+> 💡 Note: The actual response format may vary depending on the deployed model and API configuration. 
 
 ### 1.3 Ollama Deployment on k8s
 
@@ -151,7 +150,7 @@ EOF
 Send the request to the Ollama API:
 
 ``` bash
-curl http://<NODE_IP>:30134/api/embeddings \
+curl http://<NODE_IP>:<PORT>/api/embeddings \
      -H "Content-Type: application/json" \
      -d @embed.json
 ```
@@ -178,17 +177,17 @@ EOF
 Send the request to the API:
 
 ``` bash
-curl http://<NODE_IP>:30134/api/generate \
+curl http://<NODE_IP>:<PORT>/api/generate \
      -H "Content-Type: application/json" \
      -d @prompt.json
 ```
 
 You should receive the model’s response in JSON format.
 
-💡 Note:
+> 💡 Note:
 
 >Replace <NODE_IP> with your Kubernetes worker node’s IP address.
->Replace 30134 with the actual NodePort value from your service manifest.
+>Replace <PORT> with the actual NodePort value from your service manifest.
 
 
 ### 1.4 OpenWebUI Deployment on k8s
@@ -257,7 +256,7 @@ To enable Microsoft OAuth2 authentication in OpenWebUI, follow these steps:
 go run load-test.go
 ```
 
-## vLLM Load Test Results
+vLLM Load Test Results
 
 ```
 | Metric | Value |
