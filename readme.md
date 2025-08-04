@@ -20,7 +20,7 @@ This repository presents a production-ready AI inference stack for Kubernetes, d
       - [1.3.4 Ollama Inference Tests](#134-ollama-inference-tests)
     - [1.4 OpenWebUI Deployment on k8s](#14-openwebui-deployment-on-k8s)
       - [1.4.1 OpenWebUI Deployment](#141-openwebui-deployment)
-      - [1.4.2 OpenWebUI Cluster \& Ingress Service](#142-openwebui-cluster--ingress-service)
+      - [1.4.2 OpenWebUI Service and Ingress](#142-openwebui-service-and-ingress)
       - [1.4.3 OpenWebUI Microsoft OAuth2](#143-openwebui-microsoft-oauth2)
   - [2. Model Performance Test](#2-model-performance-test)
     - [2.1 vLLM Local Load Test \& Tokens Per Second Benchmark](#21-vllm-local-load-test--tokens-per-second-benchmark)
@@ -219,7 +219,7 @@ Apply the OpenWebUI deployment manifest ([`k8s/openwebui-dep.yaml`](k8s/openwebu
 kubectl apply -f k8s/openwebui-dep.yaml
 ```
 
-#### 1.4.2 OpenWebUI Cluster & Ingress Service
+#### 1.4.2 OpenWebUI Service and Ingress
 
 
 ```bash
@@ -237,7 +237,7 @@ To enable Microsoft OAuth2 authentication in OpenWebUI, follow these steps:
    - Give your application a name (e.g., `OpenWebUI`).
    - In the **Redirect URI** field, add the following:  
      ```
-     https://ai.com.tr/auth/callback
+     https://ai.com.tr/oauth2/callback
      ```
    - Click **Register**.
 
