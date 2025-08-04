@@ -18,8 +18,10 @@ spec:
       containers:
         - name: openwebui
           image: ghcr.io/open-webui/open-webui:latest
-          imagePullPolicy: IfNotPresent
           env:
+            # === Microsoft OAuth / OpenID Configuration ===
+            - name: ENABLE_OAUTH_SIGNUP
+              value: "true"
             - name: OAUTH2_PROVIDER
               value: microsoft
             - name: OAUTH2_CLIENT_ID
@@ -28,10 +30,37 @@ spec:
               value: "<MICROSOFT_CLIENT_SECRET>"
             - name: OAUTH2_REDIRECT_URI
               value: "https://ai.com.tr/oauth2/callback"
+            - name: MICROSOFT_CLIENT_TENANT_ID
+              value: "<MICROSOFT_CLIENT_TENANT_ID>"
+            - name: OPENID_PROVIDER_URL
+              value: "https://login.microsoftonline.com/<MICROSOFT_CLIENT_TENANT_ID>/v2.0/.well-known/openid-configuration"
+            - name: OAUTH_MERGE_ACCOUNTS_BY_EMAIL
+              value: "true"
+            # === WebUI Auth & Access Management ===
+            - name: WEBUI_SECRET_KEY
+              value: "<WEBUI_SECRET_KEY>"
+            - name: ENABLE_ADMIN_CHAT_ACCESS
+              value: "false"
+            - name: WEBUI_AUTH_SIGNOUT_REDIRECT_URL
+              value: "https://ai.com.tr"
+            - name: ENABLE_LOGIN_FORM
+              value: "false"
+            - name: ENABLE_SIGNUP
+              value: "false"
+            - name: OFFLINE_MODE
+              value: "true"
+            # === API Endpoints ===
             - name: API_BASE_URL
-              value: "http://vllm-sv2.ipms.svc.cluster.local:8000"
+              value: "http://<NODE_IP>:<VLLM_NODEPORT>"
             - name: OLLAMA_BASE_URL
-              value: "http://llama-service2.ipms.svc.cluster.local:11434"
+              value: "http://<NODE_IP>:<OLLAMA_NODEPORT>"
+            - name: OPENAI_API_BASE_URL
+              value: "http://<OPENAI_API_NODE_IP>:<OPENAI_API_NODEPORT>/v1"
+            # === Model & Logging Settings ===
+            - name: DEFAULT_MODEL
+              value: "qwen/qwen3-32B"
+            - name: GLOBAL_LOG_LEVEL
+              value: "DEBUG"
           ports:
             - containerPort: 8080
           volumeMounts:

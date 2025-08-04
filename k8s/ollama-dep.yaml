@@ -3,29 +3,21 @@ kind: Deployment
 metadata:
   name: ollama
   namespace: ipms
-  labels:
-    app: ollama
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: ollama
-  strategy:
-    rollingUpdate:
-      maxSurge: 25%
-      maxUnavailable: 25%
-    type: RollingUpdate
   template:
     metadata:
       labels:
         app: ollama
     spec:
       containers:
-        - name: container-0
+        - name: ollama
           image: ollama/ollama:latest
-          imagePullPolicy: IfNotPresent
-          command: ["ollama"]
-          args: ["serve"]
+          args:
+            - serve
           env:
             - name: OLLAMA_DEBUG
               value: 'true'
@@ -37,20 +29,18 @@ spec:
               value: /home/ollama
             - name: OLLAMA_LLM_LIBRARY
               value: cuda
+            - name: CUDA_VISIBLE_DEVICES
+              value: '0'
+            - name: NVIDIA_VISIBLE_DEVICES
+              value: '0'
           resources:
             limits:
-              nvidia.com/gpu: '1'
+              nvidia.com/gpu: '3'
             requests:
-              nvidia.com/gpu: '1'
-          securityContext:
-            allowPrivilegeEscalation: false
-            privileged: false
-            readOnlyRootFilesystem: false
-            runAsNonRoot: false
+              nvidia.com/gpu: '3'
           volumeMounts:
             - mountPath: /home/ollama
               name: workspace
-      restartPolicy: Always
       runtimeClassName: nvidia
       volumes:
         - name: workspace

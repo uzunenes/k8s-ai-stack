@@ -19,4 +19,4 @@ spec:
   tls:
     - hosts:
         - ai.com.tr
-      secretName: ai.com.tr
+      secretName: *.com.tr

@@ -20,7 +20,7 @@ This repository presents a production-ready AI inference stack for Kubernetes, d
       - [1.3.4 Ollama Inference Tests](#134-ollama-inference-tests)
     - [1.4 OpenWebUI Deployment on k8s](#14-openwebui-deployment-on-k8s)
       - [1.4.1 OpenWebUI Deployment](#141-openwebui-deployment)
-      - [1.4.2 OpenWebUI Ingress Service](#142-openwebui-ingress-service)
+      - [1.4.2 OpenWebUI Cluster \& Ingress Service](#142-openwebui-cluster--ingress-service)
       - [1.4.3 OpenWebUI Microsoft OAuth2](#143-openwebui-microsoft-oauth2)
   - [2. Model Performance Test](#2-model-performance-test)
     - [2.1 vLLM Local Load Test \& Tokens Per Second Benchmark](#21-vllm-local-load-test--tokens-per-second-benchmark)
@@ -41,6 +41,9 @@ Make sure you meet the following prerequisites before getting started:
 > 💡 For detailed instructions on setting up **Kubernetes**, **NVIDIA GPU support**, and the **NVIDIA Container Toolkit**, please refer to:  
 > [uzunenes/triton-server-hpa](https://github.com/uzunenes/triton-server-hpa)
 
+
+We will load the qwen3-32B model in parallel across GPUs with IDs 1 and 2. The GPU with ID 0 will be used for other models handling embedding and vision tasks.
+
 ### 1.2 vLLM Deployment on k8s
 
 #### 1.2.1 vLLM Deployment
@@ -50,6 +53,8 @@ Apply the vLLM deployment manifest ([`k8s/vllm-dep.yaml`](k8s/vllm-dep.yaml)):
 ```bash
 kubectl apply -f k8s/vllm-dep.yaml
 ```
+> 💡 Note: By setting CUDA_VISIBLE_DEVICES=1,2 and NVIDIA_VISIBLE_DEVICES=1,2, we ensure the application only uses GPUs with IDs 1 and 2. This helps isolate resources and prevents interference with workloads on other GPUs.
+
 
 #### 1.2.2 vLLM Service
 
@@ -80,26 +85,38 @@ Then, run the following command (replace <NODE_IP> with your node's IP):
 
 
 ```bash
-curl http://<NODE_IP>:<PORT>/generate \
+curl http://<NODE_IP>:<NODEPORT>/v1/completions \
      -H "Content-Type: application/json" \
      -d @prompt.json
 ```
 
 You should receive a JSON response with the model’s completion, similar to:
+
 ```json
 {
-  "id": "cmpl-12345",
+  "id": "cmpl-d3fed9c20601454da49ca7c0479a0371",
   "object": "text_completion",
-  "created": 1716744000,
+  "created": 1754299179,
   "model": "qwen/qwen3-32B",
   "choices": [
     {
-      "text": "Deep learning has revolutionized many fields by enabling machines to learn complex patterns from large datasets. For example, deep learning models have achieved state-of-the-art performance in image recognition, natural language processing, and game playing.",
       "index": 0,
+      "text": " Okay, so I need to find something interesting about deep learning. Let me start by recalling...",
       "logprobs": null,
-      "finish_reason": "stop"
+      "finish_reason": "length",
+      "stop_reason": null,
+      "prompt_logprobs": null
     }
-  ]
+  ],
+  "service_tier": null,
+  "system_fingerprint": null,
+  "usage": {
+    "prompt_tokens": 11,
+    "total_tokens": 211,
+    "completion_tokens": 200,
+    "prompt_tokens_details": null
+  },
+  "kv_transfer_params": null
 }
 ```
 
@@ -128,67 +145,64 @@ Access the Ollama pod and download the desired model.
 Example for the nomic-embed-text model:
 
 ``` bash
-kubectl exec -it <OLLAMA_POD_NAME> -- bash
-ollama pull nomic-embed-text
+kubectl exec -it <OLLAMA_POD_NAME> -- /bin/bash
+ollama pull all-minilm:latest #embedding 
+ollama pull qwen2.5vl:7b #vision
 ```
 Once the model is downloaded, Ollama will be ready to handle requests.
 
 #### 1.3.4 Ollama Inference Tests
 
-1. Embedding Test
-Create a JSON file for the embedding request:
+To verify that Ollama is running and available, you can query the API for the list of downloaded models:
 
-``` bash
-cat <<EOF > embed.json
+```bash
+curl http://<NODE_IP>:<NODEPORT>/api/tags
+```
+
+You should receive a JSON response listing all available models.
+
+```json
 {
-  "model": "nomic-embed-text",
-  "input": "Artificial intelligence is transforming the world."
+  "models": [
+    {
+      "name": "all-minilm:latest",
+      "model": "all-minilm:latest",
+      "modified_at": "2025-07-29T09:31:19.089668004Z",
+      "size": 45960996,
+      "digest": "1b226e2802dbb772b5fc32a58f103ca1804ef7501331012de126ab22f67475ef",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "bert",
+        "families": [
+          "bert"
+        ],
+        "parameter_size": "23M",
+        "quantization_level": "F16"
+      }
+    },
+    {
+      "name": "qwen2.5vl:7b",
+      "model": "qwen2.5vl:7b",
+      "modified_at": "2025-07-28T07:54:54.216774452Z",
+      "size": 5969245856,
+      "digest": "5ced39dfa4bac325dc183dd1e4febaa1c46b3ea28bce48896c8e69c1e79611cc",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen25vl",
+        "families": [
+          "qwen25vl"
+        ],
+        "parameter_size": "8.3B",
+        "quantization_level": "Q4_K_M"
+      }
+    }
+  ]
 }
-EOF
 ```
 
-Send the request to the Ollama API:
-
-``` bash
-curl http://<NODE_IP>:<PORT>/api/embeddings \
-     -H "Content-Type: application/json" \
-     -d @embed.json
-```
-
-2. Text Generation Test (Example with llama2 model)
-
-Download the text generation model inside the pod:
-
-``` bash
-kubectl exec -it <OLLAMA_POD_NAME> -- ollama pull llama2
-```
-
-Create a JSON file for the generation request:
-
-``` bash
-cat <<EOF > prompt.json
-{
-  "model": "llama2",
-  "prompt": "Explain the concept of reinforcement learning in simple terms."
-}
-EOF
-```
-
-Send the request to the API:
-
-``` bash
-curl http://<NODE_IP>:<PORT>/api/generate \
-     -H "Content-Type: application/json" \
-     -d @prompt.json
-```
-
-You should receive the model’s response in JSON format.
-
-> 💡 Note:
-
->Replace <NODE_IP> with your Kubernetes worker node’s IP address.
->Replace <PORT> with the actual NodePort value from your service manifest.
-
+> 💡 Note: Replace <NODE_IP> with your Kubernetes worker node’s IP address, Replace <NODEPORT> with the actual NodePort value from your service manifest.
 
 ### 1.4 OpenWebUI Deployment on k8s
 
@@ -200,11 +214,12 @@ Apply the OpenWebUI deployment manifest ([`k8s/openwebui-dep.yaml`](k8s/openwebu
 kubectl apply -f k8s/openwebui-dep.yaml
 ```
 
-#### 1.4.2 OpenWebUI Ingress Service
+#### 1.4.2 OpenWebUI Cluster & Ingress Service
 
 
 ```bash
-kubectl apply -f k8s/openwebui-ingress.yaml
+kubectl apply -f k8s/openwebui-svc.yaml
+kubectl apply -f k8s/openwebui-svc-ingress.yaml
 ```
 
 #### 1.4.3 OpenWebUI Microsoft OAuth2
@@ -233,20 +248,27 @@ To enable Microsoft OAuth2 authentication in OpenWebUI, follow these steps:
 4. **Configure OpenWebUI**
    - In your Kubernetes environment, update the OpenWebUI deployment manifest with the following environment variables:
 
-     ```yaml
-     env:
-       - name: OAUTH_PROVIDER
-         value: "microsoft"
-       - name: OAUTH_MICROSOFT_CLIENT_ID
-         value: "<YOUR_CLIENT_ID>"
-       - name: OAUTH_MICROSOFT_CLIENT_SECRET
-         value: "<YOUR_CLIENT_SECRET>"
-       - name: OAUTH_MICROSOFT_TENANT_ID
-         value: "<YOUR_TENANT_ID>"
-       - name: OAUTH_REDIRECT_URI
-         value: "https://ai.com.tr/auth/callback"
-     ```
+  ```yaml
+      env:
+        - name: ENABLE_OAUTH_SIGNUP
+          value: "true"
+        - name: OAUTH2_PROVIDER
+          value: microsoft
+        - name: OAUTH2_CLIENT_ID
+          value: "<MICROSOFT_CLIENT_ID>"
+        - name: OAUTH2_CLIENT_SECRET
+          value: "<MICROSOFT_CLIENT_SECRET>"
+        - name: OAUTH2_REDIRECT_URI
+          value: "https://ai.com.tr/oauth2/callback"
+        - name: MICROSOFT_CLIENT_TENANT_ID
+          value: "<MICROSOFT_CLIENT_TENANT_ID>"
+        - name: OPENID_PROVIDER_URL
+          value: "https://login.microsoftonline.com/<MICROSOFT_CLIENT_TENANT_ID>/v2.0/.well-known/openid-configuration"
+        - name: OAUTH_MERGE_ACCOUNTS_BY_EMAIL
+          value: "true"
+  ```
 
+![](docs/openwebui-microsoft.jpg?raw=true)
 
 ## 2. Model Performance Test
 
