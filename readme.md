@@ -203,6 +203,11 @@ You should receive a JSON response listing all available models.
 ```
 
 > 💡 Note: Replace <NODE_IP> with your Kubernetes worker node’s IP address, Replace <NODEPORT> with the actual NodePort value from your service manifest.
+> 💡 Note: You can add embedding and vision task models directly from the openwebui user interface.
+
+You can view the models loaded on the GPU by running the `nvidia-smi` command inside the pod.
+
+![](docs/GPU_models.png?raw=true)
 
 ### 1.4 OpenWebUI Deployment on k8s
 
