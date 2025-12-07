@@ -1,4 +1,4 @@
-# 🚀 Kubernetes AI Stack
+# Kubernetes AI Stack
 > Production-ready LLM inference on Kubernetes with vLLM, Ollama & OpenWebUI
 
 This repository presents a production-ready AI inference stack for Kubernetes, designed to run advanced large language models (LLMs) of your choice—including but not limited to Qwen3-32B—on NVIDIA L40S GPUs using vLLM. The stack integrates Ollama for embeddings and image analysis, and provides a unified interface through OpenWebUI with secure Microsoft OAuth2 authentication. All services are orchestrated within Kubernetes and securely exposed via Ingress under an internal DNS hostname (e.g., https://ai.com.tr), enabling scalable, high-performance AI capabilities on your own infrastructure.
